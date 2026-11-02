@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Parcel · Decision Desk</title>
+  <link rel="stylesheet" href="/static/app.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-mark">P</span><div><strong>Parcel</strong><small>Decision Desk</small></div></div>
+    <nav>
+      <button class="nav-item active" data-tab="overview"><span>◫</span>Overview</button>
+      <button class="nav-item" data-tab="queue"><span>☰</span>Action queue</button>
+      <button class="nav-item" data-tab="trust"><span>◈</span>Model trust</button>
+      <button class="nav-item" data-tab="audit"><span>⚑</span>Data audit</button>
+      <button class="nav-item" data-tab="runbook"><span>▤</span>Runbook</button>
+    </nav>
+    <div class="sidebar-foot"><span class="dot"></span>Synthetic demo<br><small>No real shipments or carriers</small></div>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <div><h1 id="page-title">Overview</h1><p id="page-subtitle">A capacity-aware view of tomorrow’s delivery risk.</p></div>
+      <div class="top-actions"><span class="badge">SYNTHETIC DATA</span><button class="btn secondary" id="refresh-btn">↻ Refresh</button></div>
+    </header>
+
+    <section id="overview" class="tab active">
+      <div class="notice"><strong>Demo, not a deployment recommendation.</strong> All records, carriers, updates, and results are generated. The Day 2/3 updates are simulated, not official interviewer updates.</div>
+      <div class="kpi-grid" id="kpis"></div>
+      <div class="grid-2">
+        <article class="card"><div class="card-head"><h2>Today’s intervention capacity</h2><span class="muted" id="capacity-date"></span></div><div id="capacity-panel"></div></article>
+        <article class="card"><div class="card-head"><h2>What the model leans on</h2><span class="muted">Selection-window permutation</span></div><div id="importance-panel"></div><p class="footnote">Association, not causation. Correlated inputs can share credit.</p></article>
+      </div>
+      <article class="card"><div class="card-head"><h2>Highest-priority parcels</h2><button class="link-btn" data-goto="queue">Open full queue →</button></div><div class="table-wrap"><table><thead><tr><th>Shipment</th><th>Carrier</th><th>Warehouse</th><th>Late risk</th><th>Net benefit</th><th>Decision</th></tr></thead><tbody id="overview-table"></tbody></table></div></article>
+    </section>
+
+    <section id="queue" class="tab">
+      <div class="toolbar card">
+        <label>Date<select id="date-filter"></select></label>
+        <label>Carrier<select id="carrier-filter"><option value="">All carriers</option></select></label>
+        <label class="grow">Search<input id="search-filter" type="search" placeholder="Shipment ID…" /></label>
+        <label class="check"><input id="flagged-filter" type="checkbox" /> Flagged only</label>
+        <button class="btn" id="apply-filters">Apply</button>
+      </div>
+      <div class="queue-layout">
+        <article class="card"><div class="card-head"><h2>Ranked parcels</h2><span class="muted" id="queue-count"></span></div><div class="table-wrap"><table><thead><tr><th>Shipment</th><th>Carrier</th><th>Risk</th><th>Benefit</th><th>Status</th><th></th></tr></thead><tbody id="queue-table"></tbody></table></div></article>
+        <aside class="card detail" id="detail-panel"><div class="empty-state">Select a parcel to see why it was flagged, its capacity rank, and the limits of that explanation.</div></aside>
+      </div>
+      <article class="card upload-card"><div class="card-head"><h2>Score a new batch</h2><a class="link-btn" href="/api/template" download="parcel_template.csv">Download template</a></div><p class="muted">Canonical CSV, explicit timezone offsets, 06:00 IST snapshots. Bad input is rejected rather than silently imputed.</p><div class="upload-row"><input type="file" id="csv-file" accept=".csv,text/csv" /><button class="btn" id="upload-btn">Validate & score</button></div><div id="upload-result"></div></article>
+    </section>
+
+    <section id="trust" class="tab">
+      <div class="grid-2">
+        <article class="card"><div class="card-head"><h2>Forward test: model vs baseline</h2><span class="badge subtle">Same test window</span></div><div id="comparison-panel"></div></article>
+        <article class="card"><div class="card-head"><h2>Input-drift monitor</h2><span id="drift-badge"></span></div><div id="drift-panel"></div></article>
+      </div>
+      <article class="card"><div class="card-head"><h2>Where it works least well</h2><span class="muted">Segments with n ≥ 30, sorted by recall</span></div><div class="table-wrap"><table><thead><tr><th>Segment</th><th>Value</th><th>n</th><th>Late rate</th><th>Recall @ capacity</th><th>Precision</th><th>Brier</th></tr></thead><tbody id="segments-table"></tbody></table></div></article>
+      <article class="card"><h2>How to read these numbers</h2><ul class="prose"><li>Recall at capacity is the share of truly late parcels that receive one of the limited intervention slots.</li><li>Expected net benefit uses an <strong>assumed</strong> 40% intervention success rate and ₹450 avoided late cost. It is not measured causal profit.</li><li>The bootstrap resamples whole days. It quantifies sampling variability in this synthetic set, not real-world uncertainty.</li><li>A new carrier is a known weak spot: the model has no carrier-specific history for it.</li></ul></article>
+    </section>
+
+    <section id="audit" class="tab">
+      <div class="kpi-grid" id="audit-kpis"></div>
+      <article class="card"><div class="card-head"><h2>Issues found and decisions made</h2><span class="muted">Generated flaws, explicit handling</span></div><div class="table-wrap"><table><thead><tr><th>Issue</th><th>Rows</th><th>Decision</th></tr></thead><tbody id="audit-table"></tbody></table></div></article>
+      <article class="card"><h2>Leakage boundary</h2><p class="prose">The label is <code>delivery_at &gt; original promise_at</code>. Delivery time, final status, exception code, rating, actual cost, and revised promises are never model features. Training rows whose outcomes would not be mature by the next time partition are purged.</p></article>
+    </section>
+
+    <section id="runbook" class="tab">
+      <article class="card"><h2>Run from a clean checkout</h2><pre>python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+parcel demo
+parcel serve --artifacts artifacts --port 8000</pre></article>
+      <div class="grid-2"><article class="card"><h2>Score new parcels</h2><pre>parcel predict \
+  --input artifacts/demo_input.csv \
+  --output artifacts/predictions.csv</pre></article><article class="card"><h2>Check drift</h2><pre>parcel monitor \
+  --input artifacts/demo_input.csv
+# exit 0 = no alarm, 2 = warning</pre></article></div>
+      <article class="card"><h2>What happens when it breaks</h2><ul class="prose"><li>Missing columns, naive timestamps, duplicate IDs, unknown carriers, impossible values → clear rejection.</li><li>Drift warning → review the batch and recent labeled outcomes before acting.</li><li>Missing model artifact → the API returns 503 with the exact training command.</li><li>Capacity is hard-capped by day, carrier, and warehouse. Greedy allocation is auditable but not proven globally optimal.</li></ul></article>
+    </section>
+  </main>
+  <div id="toast" class="toast" hidden></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
