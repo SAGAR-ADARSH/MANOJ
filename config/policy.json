@@ -1,0 +1,12 @@
+{
+  "scenario": "SIMULATED Day 3 constraint — not an official interviewer update",
+  "currency": "INR",
+  "daily_capacity": 80,
+  "per_carrier_capacity": 25,
+  "missed_late_cost": 450.0,
+  "intervention_success_probability": 0.4,
+  "prediction_local_hour": 6,
+  "timezone": "Asia/Kolkata",
+  "max_promised_days": 14,
+  "notes": "Warehouse limits come from warehouses.csv. Costs come from effective-dated carriers.csv. Efficacy is an assumption, not a measured treatment effect."
+}
